@@ -24,7 +24,7 @@ export async function getAllUsers() {
       include: { accounts: true },
       orderBy: { createdAt: 'desc' }
     });
-    const mappedUsers = users.map(u => {
+    const mappedUsers = users.map((u: any)=> {
       const mainAccount = u.accounts[0];
       return {
         ...u,
