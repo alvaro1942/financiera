@@ -50,7 +50,7 @@ export async function getAllAccountsTransactions() {
     });
     
     // Map to an easy layout: one account per user or 0
-    const accountsInfo = usersWithAccounts.map(u => {
+    const accountsInfo = usersWithAccounts.map((u: any) => {
       const mainAccount = u.accounts[0]; // Assuming 1 account per user right now
       return {
         userId: u.id,
