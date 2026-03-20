@@ -105,6 +105,36 @@ export async function fundAccount(userId: string, amount: number) {
   }
 }
 
+export async function deductAccount(userId: string, amount: number) {
+  if (!(await isAdmin())) return { error: "No autorizado." };
+  
+  try {
+    let account = await prisma.account.findFirst({
+      where: { userId }
+    });
+    
+    if (account) {
+      if (Number(account.balance) < amount) {
+          return { error: "El usuario no tiene saldo suficiente para restar esa cantidad." };
+      }
+      account = await prisma.account.update({
+        where: { id: account.id },
+        data: {
+          balance: {
+            decrement: amount
+          }
+        }
+      });
+      return { success: true, message: `Se restaron $${amount} exitosamente.` };
+    } else {
+      return { error: "El usuario no tiene una cuenta activa." };
+    }
+  } catch (error) {
+    console.error("Error deducting account:", error);
+    return { error: "Ocurrió un error al restar saldo de la cuenta." };
+  }
+}
+
 export async function toggleAdminRole(targetUserId: string) {
     // Only an existing admin can make another admin
     if (!(await isAdmin())) return { error: "No autorizado." };
@@ -122,5 +152,68 @@ export async function toggleAdminRole(targetUserId: string) {
     } catch (error) {
         console.error(error);
         return { error: "Error actualizando rol" };
+    }
+}
+
+export async function deleteUser(targetUserId: string) {
+    if (!(await isAdmin())) return { error: "No autorizado." };
+
+    try {
+        const user = await prisma.user.findUnique({ where: { id: targetUserId }});
+        if (!user) return { error: "Usuario no encontrado" };
+        if (user.role === 'ADMIN') return { error: "No se puede eliminar a otro administrador" };
+
+        await prisma.user.delete({
+            where: { id: targetUserId }
+        });
+        return { success: true, message: "Usuario eliminado correctamente" };
+    } catch (error) {
+        console.error("Error al eliminar usuario:", error);
+        return { error: "Error eliminando usuario" };
+    }
+}
+
+export async function createUserByAdmin(data: any) {
+    if (!(await isAdmin())) return { error: "No autorizado." };
+
+    try {
+        const { nombres, apellidoPaterno, apellidoMaterno, correo, password, curp, celular, direccion, fechaNacimiento, role } = data;
+        
+        const existingEmail = await prisma.user.findUnique({ where: { correo } });
+        if (existingEmail) return { error: "El correo ya está registrado." };
+
+        const existingCurp = await prisma.user.findUnique({ where: { curp } });
+        if (existingCurp) return { error: "La CURP ya está registrada." };
+
+        const bcrypt = require('bcryptjs');
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await prisma.user.create({
+            data: {
+                nombres,
+                apellidoPaterno,
+                apellidoMaterno,
+                correo,
+                curp,
+                celular,
+                direccion,
+                fechaNacimiento: new Date(fechaNacimiento),
+                password: hashedPassword,
+                role: role || 'USER'
+            }
+        });
+
+        // Add a default account for the user
+        await prisma.account.create({
+            data: {
+                userId: newUser.id,
+                balance: 0.0
+            }
+        });
+
+        return { success: true, message: "Usuario creado correctamente", user: newUser };
+    } catch (error) {
+        console.error("Error al crear usuario desde admin:", error);
+        return { error: "Error al crear usuario" };
     }
 }

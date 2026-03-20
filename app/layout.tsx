@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import Footer from "@/components/Footer";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { AuthProvider } from "@/context/AuthContext";
 import { getSession } from "@/app/actions/auth";
@@ -35,9 +37,11 @@ export default async function RootLayout({
       >
         <AuthProvider initialUser={session as any}>
           <Navbar />
-          <main className="flex-1 flex flex-col">
+          <main className="flex-1 flex flex-col pb-16 md:pb-0">
             {children}
           </main>
+          <Footer />
+          <MobileBottomNav />
           <FloatingWhatsApp />
         </AuthProvider>
       </body>

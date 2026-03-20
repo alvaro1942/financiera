@@ -63,12 +63,15 @@ export default function HomeView() {
                         <div className="relative lg:h-[600px] flex items-center justify-center">
                             {/* Gráfico abstracto de fondo */}
                             <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent-orange/10 to-accent-green/10 rounded-full blur-[100px] opacity-50"></div>
-                            <div className="relative w-full max-w-md aspect-square rounded-3xl bg-surface-dark border border-border-dark shadow-2xl overflow-hidden group">
-                                <div className="absolute inset-0 bg-gradient-to-tr from-background-dark/80 to-transparent"></div>
-                                <img className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" alt="Mockup de interfaz de aplicación de banca móvil" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgOD8GI0jOfbRvlbaHkQBU5S7PYP6ZA6ourPoghwquW9pPoricw3XrDoy1P9Q1Rodmv9ErlRjSUlfv_QFnhaPPZJIJ4S1J9KYyusLHVhRvCKn5vDZ3F-DeINVucoCjkv2tKnT_5iwjmxVVVcse_0oo9xIXzMyYfEIPqPvt5rddR8SyjBhsowZtOzNPrI3-b4El1l-gWDkLoRwthM4w2B3EFer5xk-ZgWj1W2t-fK7glsIxmJPRBVfxD1jqUcO2g-f9YacAusfc1iHj" />
+                            <div className="relative w-full max-w-md aspect-square group">
+                                {/* Contenedor base para la imagen y el gradiente que necesita overflow-hidden */}
+                                <div className="absolute inset-0 rounded-3xl bg-surface-dark border border-border-dark shadow-2xl overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-background-dark/80 to-transparent z-10"></div>
+                                    <img className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700 relative z-0" alt="Mockup de interfaz de aplicación de banca móvil" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgOD8GI0jOfbRvlbaHkQBU5S7PYP6ZA6ourPoghwquW9pPoricw3XrDoy1P9Q1Rodmv9ErlRjSUlfv_QFnhaPPZJIJ4S1J9KYyusLHVhRvCKn5vDZ3F-DeINVucoCjkv2tKnT_5iwjmxVVVcse_0oo9xIXzMyYfEIPqPvt5rddR8SyjBhsowZtOzNPrI3-b4El1l-gWDkLoRwthM4w2B3EFer5xk-ZgWj1W2t-fK7glsIxmJPRBVfxD1jqUcO2g-f9YacAusfc1iHj" />
+                                </div>
 
-                                {/* Tarjetas flotantes */}
-                                <div className="absolute top-8 -right-4 bg-background-dark/90 border border-border-dark p-4 rounded-xl shadow-2xl backdrop-blur-sm">
+                                {/* Tarjetas flotantes libres de cortes (fuera de overflow-hidden) */}
+                                <div className="absolute top-8 -right-4 md:-right-8 lg:-right-12 bg-background-dark/90 border border-border-dark p-4 rounded-xl shadow-2xl backdrop-blur-sm z-20">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-accent-green/20 rounded-lg">
                                             <Landmark className="text-accent-green w-4 h-4" />
@@ -80,7 +83,7 @@ export default function HomeView() {
                                     </div>
                                 </div>
 
-                                <div className="absolute bottom-12 -left-6 bg-background-dark/90 border border-border-dark p-5 rounded-xl shadow-2xl backdrop-blur-sm">
+                                <div className="absolute bottom-12 -left-6 md:-left-8 lg:-left-12 bg-background-dark/90 border border-border-dark p-5 rounded-xl shadow-2xl backdrop-blur-sm z-20">
                                     <div className="flex flex-col gap-2">
                                         <p className="text-slate-400 text-xs font-medium">Crecimiento de Inversión</p>
                                         <div className="flex items-end gap-2">
@@ -118,9 +121,9 @@ export default function HomeView() {
                                     Envía y recibe fondos a nivel global en segundos. Disfruta de transferencias sin comisiones dentro de la red y tipos de cambio competitivos.
                                 </p>
                             </div>
-                            <a className="mt-auto flex items-center gap-2 text-primary font-bold text-sm" href="#">
+                            <Link className="mt-auto flex items-center gap-2 text-primary font-bold text-sm" href="/servicios">
                                 Conoce más <ChevronRight className="w-4 h-4" />
-                            </a>
+                            </Link>
                         </div>
 
                         {/* Servicio 2 */}
@@ -134,9 +137,9 @@ export default function HomeView() {
                                     Haz crecer tu dinero con cuentas que generan altos rendimientos. Sin requisitos de saldo mínimo y con acceso instantáneo a tus fondos.
                                 </p>
                             </div>
-                            <a className="mt-auto flex items-center gap-2 text-accent-orange font-bold text-sm" href="#">
+                            <Link className="mt-auto flex items-center gap-2 text-accent-orange font-bold text-sm" href="/servicios">
                                 Conoce más <ChevronRight className="w-4 h-4" />
-                            </a>
+                            </Link>
                         </div>
 
                         {/* Servicio 3 */}
@@ -147,12 +150,12 @@ export default function HomeView() {
                             <div className="flex flex-col gap-3">
                                 <h4 className="text-white text-xl font-bold">Inversiones</h4>
                                 <p className="text-slate-400 text-sm leading-relaxed">
-                                    Accede a mercados globales con herramientas expertas en gestión de carteras. Opera acciones, ETFs y criptomonedas con seguridad de grado institucional.
+                                    Accede a mercados globales con herramientas expertas en gestión de carteras. Opera acciones y ETFs con seguridad de grado institucional.
                                 </p>
                             </div>
-                            <a className="mt-auto flex items-center gap-2 text-accent-green font-bold text-sm" href="#">
+                            <Link className="mt-auto flex items-center gap-2 text-accent-green font-bold text-sm" href="/servicios">
                                 Conoce más <ChevronRight className="w-4 h-4" />
-                            </a>
+                            </Link>
                         </div>
 
                     </div>
@@ -168,12 +171,20 @@ export default function HomeView() {
                                 <p className="text-slate-300 text-lg max-w-md">Únete a los más de 500,000 clientes que confían en CTFIN para su futuro financiero.</p>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-4 shrink-0">
-                                <button className="bg-white text-background-dark text-lg font-bold px-10 py-4 rounded-xl hover:bg-slate-100 transition-colors">
+                                <Link 
+                                    href="/register" 
+                                    className="bg-white text-background-dark text-lg font-bold px-10 py-4 rounded-xl hover:bg-slate-100 transition-colors text-center"
+                                >
                                     Abrir Cuenta
-                                </button>
-                                <button className="bg-transparent border border-white text-white text-lg font-bold px-10 py-4 rounded-xl hover:bg-white/10 transition-colors">
+                                </Link>
+                                <a 
+                                    href="https://wa.me/5211234567890" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="bg-transparent border border-white text-white text-lg font-bold px-10 py-4 rounded-xl hover:bg-white/10 transition-colors text-center flex items-center justify-center gap-2"
+                                >
                                     Contactar Ventas
-                                </button>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -181,94 +192,6 @@ export default function HomeView() {
 
             </main>
 
-            {/* Footer */}
-            <footer className="bg-background-dark border-t border-border-dark mt-auto">
-                <div className="max-w-7xl mx-auto px-4 py-12">
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
-                        <div className="col-span-2 lg:col-span-2 flex flex-col gap-6">
-                            <div className="flex items-center gap-2">
-                                <div className="bg-primary rounded-lg p-1 flex items-center justify-center">
-                                    <Landmark className="text-white w-5 h-5" />
-                                </div>
-                                <h2 className="text-white text-lg font-black">CTFIN</h2>
-                            </div>
-                            <p className="text-slate-400 text-sm max-w-xs leading-relaxed">
-                                Redefiniendo la experiencia financiera para la era moderna. Banca segura, inteligente y sin fronteras para todos.
-                            </p>
-                            <div className="flex gap-4">
-                                <a className="h-10 w-10 rounded-lg bg-surface-dark flex items-center justify-center text-slate-400 hover:text-white transition-colors" href="#">
-                                    <Globe className="w-5 h-5" />
-                                </a>
-                                <a className="h-10 w-10 rounded-lg bg-surface-dark flex items-center justify-center text-slate-400 hover:text-white transition-colors" href="#">
-                                    <Share2 className="w-5 h-5" />
-                                </a>
-                                <a className="h-10 w-10 rounded-lg bg-surface-dark flex items-center justify-center text-slate-400 hover:text-white transition-colors" href="#">
-                                    <AtSign className="w-5 h-5" />
-                                </a>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-4">
-                            <h5 className="text-white font-bold text-sm">Producto</h5>
-                            <ul className="flex flex-col gap-2 text-slate-400 text-sm">
-                                <li><a className="hover:text-primary transition-colors" href="#">Ahorros</a></li>
-                                <li><a className="hover:text-primary transition-colors" href="#">Inversiones</a></li>
-                                <li><a className="hover:text-primary transition-colors" href="#">Tarjetas de Crédito</a></li>
-                                <li><a className="hover:text-primary transition-colors" href="#">Criptomonedas</a></li>
-                            </ul>
-                        </div>
-
-                        <div className="flex flex-col gap-4">
-                            <h5 className="text-white font-bold text-sm">Empresa</h5>
-                            <ul className="flex flex-col gap-2 text-slate-400 text-sm">
-                                <li><a className="hover:text-primary transition-colors" href="#">Sobre Nosotros</a></li>
-                                <li><a className="hover:text-primary transition-colors" href="#">Empleos</a></li>
-                                <li><a className="hover:text-primary transition-colors" href="#">Prensa</a></li>
-                                <li><a className="hover:text-primary transition-colors" href="#">Contacto</a></li>
-                            </ul>
-                        </div>
-
-                        <div className="flex flex-col gap-4">
-                            <h5 className="text-white font-bold text-sm">Soporte</h5>
-                            <ul className="flex flex-col gap-2 text-slate-400 text-sm">
-                                <li><a className="hover:text-primary transition-colors" href="#">Centro de Ayuda</a></li>
-                                <li><a className="hover:text-primary transition-colors" href="#">Seguridad</a></li>
-                                <li><a className="hover:text-primary transition-colors" href="#">Términos</a></li>
-                                <li><a className="hover:text-primary transition-colors" href="#">Privacidad</a></li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div className="pt-8 border-t border-border-dark flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-slate-500 text-xs">© 2024 CTFIN Financial Services Inc. Todos los derechos reservados.</p>
-                        <div className="flex gap-6 text-slate-500 text-xs">
-                            <a className="hover:text-white" href="#">Política de Privacidad</a>
-                            <a className="hover:text-white" href="#">Términos de Servicio</a>
-                            <a className="hover:text-white" href="#">Configuración de Cookies</a>
-                        </div>
-                    </div>
-                </div>
-            </footer>
-
-            {/* Barra de Navegación Inferior (Sólo Móvil) */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border-dark bg-surface-dark px-4 pb-4 pt-2 flex justify-around items-center">
-                <Link className="flex flex-col items-center gap-1 text-primary" href="/">
-                    <Home className="w-6 h-6 fill-current" />
-                    <span className="text-[10px] font-bold">Inicio</span>
-                </Link>
-                <Link className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-300 transition-colors" href="/deposit">
-                    <Wallet className="w-6 h-6" />
-                    <span className="text-[10px] font-bold">Billetera</span>
-                </Link>
-                <Link className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-300 transition-colors" href="/dashboard">
-                    <TrendingUp className="w-6 h-6" />
-                    <span className="text-[10px] font-bold">Invertir</span>
-                </Link>
-                <Link className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-300 transition-colors" href="/dashboard">
-                    <User className="w-6 h-6" />
-                    <span className="text-[10px] font-bold">Perfil</span>
-                </Link>
-            </div>
         </div>
     );
 }
