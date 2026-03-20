@@ -47,8 +47,8 @@ export default function DepositView() {
                             </button>
                         </div>
 
-                        <div className="bg-[#19131f] p-4 rounded-xl flex items-center justify-center border border-[#362843]">
-                            <div className="bg-white p-2 rounded-lg w-full max-w-[200px] aspect-square flex items-center justify-center overflow-hidden">
+                        <div className="bg-[#19131f] p-6 rounded-xl flex items-center justify-center border border-[#362843] w-full">
+                            <div className="bg-white p-2 rounded-lg w-full max-w-[320px] sm:max-w-[400px] hover:scale-[1.02] transition-transform aspect-[1/1.2] flex items-center justify-center overflow-hidden shadow-2xl">
                                 <img src="/qr2.png" alt="Código QR para depósito" className="w-full h-full object-contain" />
                             </div>
                         </div>
