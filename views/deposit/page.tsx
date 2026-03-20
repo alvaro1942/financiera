@@ -48,8 +48,8 @@ export default function DepositView() {
                         </div>
 
                         <div className="bg-[#19131f] p-4 rounded-xl flex items-center justify-center border border-[#362843]">
-                            <div className="bg-white p-2 rounded-lg w-full max-w-[200px] aspect-square flex items-center justify-center">
-                                <QrCode className="w-full h-full text-black" strokeWidth={1} />
+                            <div className="bg-white p-2 rounded-lg w-full max-w-[200px] aspect-square flex items-center justify-center overflow-hidden">
+                                <img src="/qr2.png" alt="Código QR para depósito" className="w-full h-full object-contain" />
                             </div>
                         </div>
 
