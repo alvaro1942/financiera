@@ -86,6 +86,7 @@ export async function loginUser(formData: FormData) {
     });
 
     if (!user) return { error: "Credenciales incorrectas." };
+    if (!user.isActive) return { error: "Esta cuenta ha sido desactivada." };
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) return { error: "Credenciales incorrectas." };

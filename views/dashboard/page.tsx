@@ -37,6 +37,7 @@ interface UserProfile {
     celular: string;
     direccion: string;
     correo: string;
+    isActive: boolean;
     balance: number;
 }
 
@@ -123,10 +124,26 @@ export default function DashboardView({ userProfile }: { userProfile: UserProfil
                         {/* Left Column */}
                         <div className="flex flex-col gap-4">
                             {/* Greeting */}
-                            <div className="w-full">
-                                <h3 className="text-slate-900 dark:text-white text-xl font-bold leading-tight">¡Bienvenido, {userProfile.nombres}!</h3>
-                                <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Es un buen día para ahorrar.</p>
+                            <div className="w-full flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-slate-900 dark:text-white text-xl font-bold leading-tight">¡Bienvenido, {userProfile.nombres}!</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Es un buen día para ahorrar.</p>
+                                </div>
+                                {!userProfile.isActive && (
+                                    <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-xs font-bold border border-red-200 dark:border-red-800/50">
+                                        <AlertCircle className="w-4 h-4" />
+                                        CUENTA DESACTIVADA
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Mobile Warning */}
+                            {!userProfile.isActive && (
+                                <div className="sm:hidden flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-xl text-sm font-bold border border-red-200 dark:border-red-800/50">
+                                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                    Tu cuenta se encuentra desactivada por un administrador.
+                                </div>
+                            )}
 
                             {/* Balance Card */}
                             <div>
@@ -182,21 +199,44 @@ export default function DashboardView({ userProfile }: { userProfile: UserProfil
                                 <div className="flex flex-col gap-3 overflow-y-auto w-full pr-1 max-h-[300px]">
                                     {transactions.map((tx: any) => {
                                         const isDeposit = tx.type === 'DEPOSIT';
+                                        const isTransfer = tx.type === 'TRANSFER';
+                                        const isPending = tx.status === 'PENDING';
+                                        const isRejected = tx.status === 'REJECTED';
+                                        
+                                        let bgIconColor = isDeposit ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400';
+                                        let textColor = isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white';
+                                        let sign = isDeposit ? '+' : '-';
+                                        
+                                        if (isTransfer) {
+                                            if (isPending) {
+                                                bgIconColor = 'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400';
+                                                textColor = 'text-yellow-600 dark:text-yellow-400';
+                                            } else if (isRejected) {
+                                                bgIconColor = 'bg-slate-100 dark:bg-slate-500/20 text-slate-500 dark:text-slate-400';
+                                                textColor = 'text-slate-500 dark:text-slate-400 line-through';
+                                                sign = '';
+                                            }
+                                        }
+
                                         return (
-                                            <div key={tx.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <div key={tx.id} className={`flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isRejected ? 'opacity-60' : ''}`}>
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDeposit ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400'}`}>
-                                                        {isDeposit ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${bgIconColor}`}>
+                                                        {isDeposit ? <ArrowUpRight className="w-5 h-5" /> : (isTransfer ? <Send className="w-4 h-4" /> : <ArrowDownRight className="w-5 h-5" />)}
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-slate-900 dark:text-white">
-                                                            {isDeposit ? 'Depósito (+)' : 'Retiro (-)'}
+                                                        <span className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            {isDeposit ? 'Depósito' : (isTransfer ? 'Transferencia' : 'Retiro')}
+                                                            {isPending && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Pendiente</span>}
+                                                            {isRejected && <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Rechazada</span>}
                                                         </span>
-                                                        <span className="text-xs text-slate-500">{new Date(tx.createdAt).toLocaleDateString()}</span>
+                                                        <span className="text-xs text-slate-500 whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">
+                                                            {isTransfer && tx.destinationName ? `A: ${tx.destinationName}` : new Date(tx.createdAt).toLocaleDateString()}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                                <div className={`text-sm font-bold tracking-tight ${isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
-                                                    {isDeposit ? '+' : '-'}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                <div className={`text-sm font-bold tracking-tight ${textColor}`}>
+                                                    {sign}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </div>
                                             </div>
                                         );

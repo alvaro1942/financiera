@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, FileText, Landmark, Search, PlusCircle, MinusCircle, CheckCircle2, AlertCircle, RefreshCw, X } from "lucide-react";
-import { getAllUsers, getAllAccountsTransactions, fundAccount } from "@/app/actions/admin";
+import { Users, FileText, Landmark, Search, PlusCircle, MinusCircle, CheckCircle2, AlertCircle, RefreshCw, X, Trash2, Lock, Unlock } from "lucide-react";
+import { getAllUsers, getAllAccountsTransactions, fundAccount, deleteUser, toggleUserStatus, getPendingTransfers, resolveTransfer } from "@/app/actions/admin";
 
 export default function AdminView() {
-    const [activeTab, setActiveTab] = useState<'usuarios' | 'tramites'>('usuarios');
+    const [activeTab, setActiveTab] = useState<'usuarios' | 'tramites' | 'aprobaciones'>('usuarios');
     const [users, setUsers] = useState<any[]>([]);
     const [accounts, setAccounts] = useState<any[]>([]);
+    const [pendingTransfers, setPendingTransfers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
@@ -15,6 +16,7 @@ export default function AdminView() {
     // Funding state
     const [fundingAmount, setFundingAmount] = useState<{[key: string]: string}>({});
     const [fundingLoader, setFundingLoader] = useState<string | null>(null);
+    const [actionLoader, setActionLoader] = useState<string | null>(null);
 
     const loadData = async () => {
         setLoading(true);
@@ -25,10 +27,14 @@ export default function AdminView() {
                 const res = await getAllUsers();
                 if (res?.success) setUsers(res.users);
                 else setError(res?.error || "Error cargando usuarios.");
-            } else {
+            } else if (activeTab === 'tramites') {
                 const res = await getAllAccountsTransactions();
                 if (res?.success) setAccounts(res.accounts);
                 else setError(res?.error || "Error cargando trámites.");
+            } else {
+                const res = await getPendingTransfers();
+                if (res?.success) setPendingTransfers(res.transfers || []);
+                else setError(res?.error || "Error cargando aprobaciones.");
             }
         } catch (err) {
             setError("Ocurrió un error inesperado al conectar con la base de datos.");
@@ -67,6 +73,53 @@ export default function AdminView() {
         }
         
         setFundingLoader(null);
+    };
+
+    const handleDeleteUser = async (userId: string) => {
+        if (!window.confirm("¿Estás seguro de que quieres eliminar definitivamente a este usuario?\n\nEsta acción no se puede deshacer y eliminará todas sus cuentas y transacciones.")) return;
+        
+        setActionLoader(userId + '-delete');
+        setError("");
+        setSuccess("");
+        
+        const res = await deleteUser(userId);
+        if (res?.success) {
+            setSuccess(res.message);
+            loadData();
+        } else {
+            setError(res?.error || "Ocurrió un error al eliminar el usuario.");
+        }
+        setActionLoader(null);
+    };
+
+    const handleToggleUser = async (userId: string) => {
+        setActionLoader(userId + '-toggle');
+        setError("");
+        setSuccess("");
+        
+        const res = await toggleUserStatus(userId);
+        if (res?.success) {
+            setSuccess(res.message);
+            loadData();
+        } else {
+            setError(res?.error || "Ocurrió un error al cambiar estado del usuario.");
+        }
+        setActionLoader(null);
+    };
+
+    const handleResolveTransfer = async (txId: string, action: 'APPROVE' | 'REJECT') => {
+        setActionLoader(txId + '-' + action);
+        setError("");
+        setSuccess("");
+        
+        const res = await resolveTransfer(txId, action);
+        if (res?.success) {
+            setSuccess(res.message);
+            loadData();
+        } else {
+            setError(res?.error || "Error al resolver la transferencia.");
+        }
+        setActionLoader(null);
     };
 
     return (
@@ -120,6 +173,16 @@ export default function AdminView() {
                         <FileText className="w-4 h-4" />
                         Trámites
                     </button>
+                    <button 
+                        onClick={() => setActiveTab('aprobaciones')}
+                        className={`flex items-center gap-2 pb-3 px-4 text-sm font-bold transition-all border-b-2 ${activeTab === 'aprobaciones' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 opacity-60 hover:opacity-100'}`}
+                    >
+                        <AlertCircle className="w-4 h-4" />
+                        Aprobaciones
+                        {pendingTransfers.length > 0 && activeTab !== 'aprobaciones' && (
+                            <span className="bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full ml-1">{pendingTransfers.length}</span>
+                        )}
+                    </button>
                 </div>
 
                 {/* Content Area */}
@@ -130,7 +193,7 @@ export default function AdminView() {
                         <div className="relative w-full max-w-sm">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                             <input 
-                                placeholder={activeTab === 'usuarios' ? "Buscar usuario..." : "Buscar trámite..."} 
+                                placeholder={activeTab === 'usuarios' ? "Buscar usuario..." : (activeTab === 'tramites' ? "Buscar trámite..." : "Buscar aprobación...")} 
                                 className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark/80 rounded-xl text-sm outline-none focus:border-primary/50 transition-colors dark:text-white"
                             />
                         </div>
@@ -159,7 +222,9 @@ export default function AdminView() {
                                         <th className="font-semibold p-4">Nombre Completo</th>
                                         <th className="font-semibold p-4">Contacto</th>
                                         <th className="font-semibold p-4">CURP</th>
+                                        <th className="font-semibold p-4">Estado</th>
                                         <th className="font-semibold p-4 text-right">Saldo Actual</th>
+                                        <th className="font-semibold p-4 text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -194,23 +259,48 @@ export default function AdminView() {
                                                     {user.curp}
                                                 </span>
                                             </td>
+                                            <td className="p-4 align-top">
+                                                <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${user.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                                    {user.isActive ? 'Activo' : 'Inactivo'}
+                                                </span>
+                                            </td>
                                             <td className="p-4 align-top text-right">
                                                 <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
                                                     ${(user.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </span>
                                             </td>
+                                            <td className="p-4 align-top text-center w-24">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button 
+                                                        onClick={() => handleToggleUser(user.id)}
+                                                        disabled={actionLoader !== null}
+                                                        className={`p-2 rounded-lg transition-colors ${user.isActive ? 'text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20' : 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20'} disabled:opacity-50`}
+                                                        title={user.isActive ? "Desactivar" : "Activar"}
+                                                    >
+                                                        {actionLoader === user.id + '-toggle' ? <RefreshCw className="w-5 h-5 animate-spin" /> : (user.isActive ? <Lock className="w-5 h-5" /> : <Unlock className="w-5 h-5" />)}
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDeleteUser(user.id)}
+                                                        disabled={actionLoader !== null}
+                                                        className="p-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                                                        title="Eliminar"
+                                                    >
+                                                        {actionLoader === user.id + '-delete' ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))}
                                     {users.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="p-8 text-center text-slate-500 text-sm">
+                                            <td colSpan={7} className="p-8 text-center text-slate-500 text-sm">
                                                 No hay usuarios registrados.
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
-                        ) : (
+                        ) : activeTab === 'tramites' ? (
                             <table className="w-full text-left border-collapse min-w-[800px]">
                                 <thead>
                                     <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -287,6 +377,72 @@ export default function AdminView() {
                                         <tr>
                                             <td colSpan={3} className="p-8 text-center text-slate-500 text-sm">
                                                 Aún no hay usuarios.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <table className="w-full text-left border-collapse min-w-[800px]">
+                                <thead>
+                                    <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                        <th className="font-semibold p-4">Solicitante</th>
+                                        <th className="font-semibold p-4">Destino</th>
+                                        <th className="font-semibold p-4 text-right">Monto</th>
+                                        <th className="font-semibold p-4 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {pendingTransfers.map((tx) => (
+                                        <tr key={tx.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
+                                            <td className="p-4 align-top">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                                        {tx.user?.nombres} {tx.user?.apellidoPaterno}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500">{tx.user?.correo}</span>
+                                                    <span className="text-xs text-slate-400 mt-1">{new Date(tx.createdAt).toLocaleString()}</span>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 align-top">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-sm font-medium text-slate-900 dark:text-white uppercase">{tx.destinationBank}</span>
+                                                    <span className="text-xs text-slate-500">{tx.destinationName}</span>
+                                                    <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded w-fit text-slate-600 dark:text-slate-300">CLABE: {tx.destinationClabe}</span>
+                                                    {tx.description && <span className="text-xs italic text-slate-500 mt-1">"{tx.description}"</span>}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 align-top text-right">
+                                                <span className="text-lg font-black text-amber-600 dark:text-amber-400">
+                                                    ${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 align-top text-center">
+                                                <div className="flex flex-col gap-2 items-center justify-center">
+                                                    <button 
+                                                        onClick={() => handleResolveTransfer(tx.id, 'APPROVE')}
+                                                        disabled={actionLoader !== null}
+                                                        className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-9 px-4 rounded-lg transition-all shadow-md shadow-emerald-600/20 disabled:opacity-50 text-xs"
+                                                    >
+                                                        {actionLoader === tx.id + '-APPROVE' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                                        Autorizar
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleResolveTransfer(tx.id, 'REJECT')}
+                                                        disabled={actionLoader !== null}
+                                                        className="w-full flex items-center justify-center gap-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold h-9 px-4 rounded-lg transition-all shadow-sm disabled:opacity-50 text-xs"
+                                                    >
+                                                        {actionLoader === tx.id + '-REJECT' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                                                        Rechazar
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {pendingTransfers.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="p-8 text-center text-slate-500 text-sm">
+                                                No hay transferencias pendientes por aprobar.
                                             </td>
                                         </tr>
                                     )}

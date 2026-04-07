@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "./auth";
+import { revalidatePath } from "next/cache";
 
 // Check if user is admin
 async function isAdmin() {
@@ -110,6 +111,7 @@ export async function fundAccount(userId: string, amount: number) {
       }
     });
     
+    revalidatePath('/admin');
     const actionText = amount >= 0 ? 'abonaron' : 'descontaron';
     return { success: true, message: `Se ${actionText} $${Math.abs(amount)} exitosamente.` };
   } catch (error) {
@@ -137,3 +139,140 @@ export async function toggleAdminRole(targetUserId: string) {
         return { error: "Error actualizando rol" };
     }
 }
+
+export async function toggleUserStatus(targetUserId: string) {
+    if (!(await isAdmin())) return { error: "No autorizado." };
+
+    try {
+        const user = await prisma.user.findUnique({ where: { id: targetUserId }});
+        if (!user) return { error: "Usuario no encontrado" };
+        
+        // Prevent admin from deactivating themselves
+        const session = await getSession();
+        if (session?.userId === targetUserId) {
+            return { error: "No puedes desactivar tu propia cuenta." };
+        }
+
+        const newStatus = !user.isActive;
+        await prisma.user.update({
+            where: { id: targetUserId },
+            data: { isActive: newStatus }
+        });
+        revalidatePath('/admin');
+        return { success: true, message: `Usuario ${newStatus ? 'activado' : 'desactivado'} exitosamente.` };
+    } catch (error) {
+        console.error("Error toggling user status:", error);
+        return { error: "Error al actualizar estado del usuario." };
+    }
+}
+
+export async function deleteUser(targetUserId: string) {
+    if (!(await isAdmin())) return { error: "No autorizado." };
+
+    try {
+        const user = await prisma.user.findUnique({ where: { id: targetUserId }});
+        if (!user) return { error: "Usuario no encontrado" };
+
+        // Prevent admin from deleting themselves
+        const session = await getSession();
+        if (session?.userId === targetUserId) {
+            return { error: "No puedes eliminar tu propia cuenta." };
+        }
+
+        await prisma.user.delete({
+            where: { id: targetUserId }
+        });
+        revalidatePath('/admin');
+        return { success: true, message: "Usuario eliminado exitosamente." };
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        return { error: "Error al eliminar el usuario." };
+    }
+}
+
+export async function getPendingTransfers() {
+  if (!(await isAdmin())) return { error: "No autorizado." };
+
+  try {
+    const pendingTransfers = await prisma.transaction.findMany({
+      where: {
+        type: 'TRANSFER',
+        status: 'PENDING'
+      },
+      include: {
+        account: {
+          include: {
+            user: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const formatted = pendingTransfers.map((tx: any) => ({
+      id: tx.id,
+      amount: parseFloat(tx.amount.toString()),
+      destinationName: tx.destinationName,
+      destinationBank: tx.destinationBank,
+      destinationClabe: tx.destinationClabe,
+      description: tx.description,
+      createdAt: tx.createdAt.toISOString(),
+      user: {
+        nombres: tx.account.user.nombres,
+        apellidoPaterno: tx.account.user.apellidoPaterno,
+        correo: tx.account.user.correo
+      }
+    }));
+
+    return { success: true, transfers: formatted };
+  } catch (error) {
+    console.error("Error fetching pending transfers:", error);
+    return { error: "Error al obtener transferencias pendientes." };
+  }
+}
+
+export async function resolveTransfer(transactionId: string, action: 'APPROVE' | 'REJECT') {
+  if (!(await isAdmin())) return { error: "No autorizado." };
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.findUnique({
+        where: { id: transactionId },
+        include: { account: true }
+      });
+
+      if (!transaction) throw new Error("TRANSACTION_NOT_FOUND");
+      if (transaction.status !== 'PENDING') throw new Error("TRANSACTION_NOT_PENDING");
+
+      if (action === 'APPROVE') {
+        await tx.transaction.update({
+          where: { id: transactionId },
+          data: { status: 'COMPLETED' }
+        });
+      } else if (action === 'REJECT') {
+        await tx.transaction.update({
+          where: { id: transactionId },
+          data: { status: 'REJECTED' }
+        });
+        
+        // Return the funds
+        await tx.account.update({
+          where: { id: transaction.accountId },
+          data: {
+            balance: { increment: transaction.amount }
+          }
+        });
+      }
+
+      return { success: true };
+    });
+
+    revalidatePath('/admin');
+    revalidatePath('/dashboard');
+    return { success: true, message: action === 'APPROVE' ? 'Transferencia autorizada.' : 'Transferencia rechazada y fondos devueltos.' };
+  } catch (error: any) {
+    console.error("Error resolving transfer:", error);
+    return { error: "Error al resolver la transferencia." };
+  }
+}
+
