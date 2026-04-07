@@ -43,7 +43,19 @@ export default function RegisterView() {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
-            setFileName(e.target.files[0].name);
+            const file = e.target.files[0];
+            
+            // Validate file size strictly (4MB limit for Vercel Serverless constraint)
+            if (file.size > 4 * 1024 * 1024) {
+                setError({ message: 'El archivo es demasiado pesado. El máximo permitido es 4MB.', field: 'ineFile' });
+                e.target.value = ''; // Reset input
+                setFileName(null);
+                return;
+            }
+            
+            // Clear any previous file errors
+            if (error?.field === 'ineFile') setError(null);
+            setFileName(file.name);
         } else {
             setFileName(null);
         }
@@ -261,6 +273,7 @@ export default function RegisterView() {
                                     </div>
                                     <input name="ineFile" type="file" className="opacity-0 absolute inset-0 w-full h-full cursor-pointer" accept="image/jpeg, image/png, application/pdf" onChange={handleFileChange} />
                                 </label>
+                                {error?.field === 'ineFile' && <span className="text-red-500 text-[11px] ml-1 mt-1 font-semibold">{error.message}</span>}
                             </div>
 
                             <button disabled={loading} type="submit" className="w-full mt-6 bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-xl transition-all flex items-center justify-center gap-2 text-[15px] shadow-lg shadow-primary/20 disabled:opacity-70 disabled:cursor-not-allowed">
