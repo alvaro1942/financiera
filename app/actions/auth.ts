@@ -2,10 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { writeFile } from "fs/promises";
-import path from "path";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { put } from "@vercel/blob";
 
 const secretKey = new TextEncoder().encode(process.env.JWT_SECRET || "default_super_secret_key_change_me_in_prod");
 
@@ -26,27 +25,27 @@ export async function registerUser(formData: FormData) {
     const ineFile = formData.get("ineFile") as File;
 
     // Server-side validation
-    if (correo !== confirmarCorreo) return { error: "Los correos no coinciden." };
-    if (password !== confirmarPassword) return { error: "Las contraseñas no coinciden." };
+    if (correo !== confirmarCorreo) return { error: "Los correos no coinciden.", field: "confirmarCorreo" };
+    if (password !== confirmarPassword) return { error: "Las contraseñas no coinciden.", field: "confirmarPassword" };
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { correo },
     });
-    if (existingUser) return { error: "Este correo electrónico ya está registrado." };
+    if (existingUser) return { error: "Este correo electrónico ya está registrado.", field: "correo" };
 
     const existingCurp = await prisma.user.findUnique({
       where: { curp },
     });
-    if (existingCurp) return { error: "Esta CURP ya está registrada." };
+    if (existingCurp) return { error: "Esta CURP ya está registrada.", field: "curp" };
 
     // Save File
-    let fileName = null;
+    let inexFileName = null;
     if (ineFile && ineFile.size > 0) {
-      const buffer = Buffer.from(await ineFile.arrayBuffer());
-      fileName = `${Date.now()}_${ineFile.name.replaceAll(" ", "_")}`;
-      const filePath = path.join(process.cwd(), "public", "uploads", fileName);
-      await writeFile(filePath, buffer);
+      const blob = await put(`identifications/${Date.now()}_${ineFile.name.replaceAll(" ", "_")}`, ineFile, {
+        access: 'private',
+      });
+      inexFileName = blob.url;
     }
 
     // Hash password
@@ -64,7 +63,7 @@ export async function registerUser(formData: FormData) {
         correo,
         direccion,
         password: hashedPassword,
-        ineFileName: fileName,
+        ineFileName: inexFileName,
       },
     });
 

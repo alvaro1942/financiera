@@ -9,7 +9,7 @@ import { registerUser } from '@/app/actions/auth';
 export default function RegisterView() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState<{ message: string; field?: string } | null>(null);
     const [success, setSuccess] = useState('');
     const [fileName, setFileName] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +18,7 @@ export default function RegisterView() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
-        setError('');
+        setError(null);
         setSuccess('');
 
         const formData = new FormData(e.currentTarget);
@@ -27,7 +27,7 @@ export default function RegisterView() {
             const result = await registerUser(formData);
             
             if (result?.error) {
-                setError(result.error);
+                setError({ message: result.error, field: result?.field });
             } else if (result?.success) {
                 setSuccess(result.message || 'Cuenta creada exitosamente.');
                 setTimeout(() => {
@@ -35,7 +35,7 @@ export default function RegisterView() {
                 }, 2000);
             }
         } catch (err) {
-            setError('Ocurrió un error inesperado al enviar los datos. Intenta de nuevo.');
+            setError({ message: 'Ocurrió un error inesperado al enviar los datos. Intenta de nuevo.' });
         } finally {
             setLoading(false);
         }
@@ -109,10 +109,10 @@ export default function RegisterView() {
                             <p className="text-slate-500 dark:text-slate-400 text-sm">Completa el formulario para registrarte.</p>
                         </div>
 
-                        {error && (
+                        {error && !error.field && (
                             <div className="mb-4 flex items-center gap-2 p-4 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm rounded-xl border border-red-200 dark:border-red-900/50">
                                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                                <p>{error}</p>
+                                <p>{error.message}</p>
                             </div>
                         )}
 
@@ -165,11 +165,12 @@ export default function RegisterView() {
                             </div>
 
                             <div className="flex flex-col gap-1.5 mt-2">
-                                <label className="text-slate-900 dark:text-slate-300 text-xs font-semibold ml-1">CURP</label>
+                                <label className={`text-xs font-semibold ml-1 ${error?.field === 'curp' ? 'text-red-500' : 'text-slate-900 dark:text-slate-300'}`}>CURP</label>
                                 <div className="relative">
-                                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                    <input name="curp" className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 h-11 placeholder:text-slate-400 pl-9 pr-4 text-sm font-medium transition-all uppercase" placeholder="Clave Única de Registro" maxLength={18} type="text" required />
+                                    <CreditCard className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${error?.field === 'curp' ? 'text-red-500' : 'text-slate-400'}`} />
+                                    <input name="curp" className={`form-input flex w-full rounded-xl focus:outline-none focus:ring-2 h-11 placeholder:text-slate-400 pl-9 pr-4 text-sm font-medium transition-all uppercase ${error?.field === 'curp' ? 'border-red-500 bg-red-50 dark:bg-red-500/10 focus:ring-red-500/50 text-red-900 dark:text-red-400 border-2' : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white focus:ring-primary/50'}`} placeholder="Clave Única de Registro" maxLength={18} type="text" required />
                                 </div>
+                                {error?.field === 'curp' && <span className="text-red-500 text-[10px] ml-1 mt-0.5 font-medium">{error.message}</span>}
                             </div>
 
                             {/* Celular */}
@@ -184,20 +185,22 @@ export default function RegisterView() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
                                 {/* Correo */}
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-slate-900 dark:text-slate-300 text-xs font-semibold ml-1">Correo Electrónico</label>
+                                    <label className={`text-xs font-semibold ml-1 ${error?.field === 'correo' ? 'text-red-500' : 'text-slate-900 dark:text-slate-300'}`}>Correo Electrónico</label>
                                     <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                        <input name="correo" className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 h-11 placeholder:text-slate-400 pl-9 pr-4 text-sm font-medium transition-all" placeholder="tucorreo@ejemplo.com" type="email" required />
+                                        <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${error?.field === 'correo' ? 'text-red-500' : 'text-slate-400'}`} />
+                                        <input name="correo" className={`form-input flex w-full rounded-xl focus:outline-none focus:ring-2 h-11 placeholder:text-slate-400 pl-9 pr-4 text-sm font-medium transition-all ${error?.field === 'correo' ? 'border-red-500 bg-red-50 dark:bg-red-500/10 focus:ring-red-500/50 text-red-900 dark:text-red-400 border-2' : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white focus:ring-primary/50'}`} placeholder="tucorreo@ejemplo.com" type="email" required />
                                     </div>
+                                    {error?.field === 'correo' && <span className="text-red-500 text-[10px] ml-1 mt-0.5 font-medium">{error.message}</span>}
                                 </div>
 
                                 {/* Confirmar Correo */}
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-slate-900 dark:text-slate-300 text-xs font-semibold ml-1">Confirmar Correo</label>
+                                    <label className={`text-xs font-semibold ml-1 ${error?.field === 'confirmarCorreo' ? 'text-red-500' : 'text-slate-900 dark:text-slate-300'}`}>Confirmar Correo</label>
                                     <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                        <input name="confirmarCorreo" className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 h-11 placeholder:text-slate-400 pl-9 pr-4 text-sm font-medium transition-all" placeholder="Confirma tu correo" type="email" required />
+                                        <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${error?.field === 'confirmarCorreo' ? 'text-red-500' : 'text-slate-400'}`} />
+                                        <input name="confirmarCorreo" className={`form-input flex w-full rounded-xl focus:outline-none focus:ring-2 h-11 placeholder:text-slate-400 pl-9 pr-4 text-sm font-medium transition-all ${error?.field === 'confirmarCorreo' ? 'border-red-500 bg-red-50 dark:bg-red-500/10 focus:ring-red-500/50 text-red-900 dark:text-red-400 border-2' : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white focus:ring-primary/50'}`} placeholder="Confirma tu correo" type="email" required />
                                     </div>
+                                    {error?.field === 'confirmarCorreo' && <span className="text-red-500 text-[10px] ml-1 mt-0.5 font-medium">{error.message}</span>}
                                 </div>
                             </div>
 
@@ -225,14 +228,15 @@ export default function RegisterView() {
 
                                 {/* Confirmar Contraseña */}
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-slate-900 dark:text-slate-300 text-xs font-semibold ml-1">Confirmar Contraseña</label>
+                                    <label className={`text-xs font-semibold ml-1 ${error?.field === 'confirmarPassword' ? 'text-red-500' : 'text-slate-900 dark:text-slate-300'}`}>Confirmar Contraseña</label>
                                     <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                        <input name="confirmarPassword" className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 h-11 placeholder:text-slate-400 pl-9 pr-10 text-sm font-medium transition-all" placeholder="Confirma contraseña" type={showConfirmPassword ? "text" : "password"} required />
+                                        <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${error?.field === 'confirmarPassword' ? 'text-red-500' : 'text-slate-400'}`} />
+                                        <input name="confirmarPassword" className={`form-input flex w-full rounded-xl focus:outline-none focus:ring-2 h-11 placeholder:text-slate-400 pl-9 pr-10 text-sm font-medium transition-all ${error?.field === 'confirmarPassword' ? 'border-red-500 bg-red-50 dark:bg-red-500/10 focus:ring-red-500/50 text-red-900 dark:text-red-400 border-2' : 'border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white focus:ring-primary/50'}`} placeholder="Confirma contraseña" type={showConfirmPassword ? "text" : "password"} required />
                                         <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors focus:outline-none">
                                             {showConfirmPassword ? <EyeOff className="w-4 h-4 text-primary" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                     </div>
+                                    {error?.field === 'confirmarPassword' && <span className="text-red-500 text-[10px] ml-1 mt-0.5 font-medium">{error.message}</span>}
                                 </div>
                             </div>
 
