@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Landmark, ArrowLeft, Mail, Lock, Eye, Fingerprint, Key, AlertCircle, Loader2 } from 'lucide-react';
+import { Landmark, ArrowLeft, Mail, Lock, Eye, EyeOff, Fingerprint, Key, AlertCircle, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginUser, getSession } from '@/app/actions/auth';
@@ -116,8 +116,10 @@ export default function LoginView() {
                                     </div>
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                        <input name="password" required className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark/80 h-11 placeholder:text-slate-400 pl-9 pr-9 text-sm font-medium transition-all" placeholder="••••••••" type={showPassword ? "text" : "password"} />
-                                        <Eye onClick={() => setShowPassword(!showPassword)} className={`absolute right-3 top-1/2 -translate-y-1/2 hover:text-slate-300 w-4 h-4 cursor-pointer transition-colors ${showPassword ? 'text-primary' : 'text-slate-400'}`} />
+                                        <input name="password" required className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark/80 h-11 placeholder:text-slate-400 pl-9 pr-10 text-sm font-medium transition-all" placeholder="••••••••" type={showPassword ? "text" : "password"} />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors focus:outline-none">
+                                            {showPassword ? <EyeOff className="w-4 h-4 text-primary" /> : <Eye className="w-4 h-4" />}
+                                        </button>
                                     </div>
                                     <div className="flex justify-end mt-1">
                                         <a className="text-primary text-[11px] font-semibold hover:underline" href="#">¿Olvidaste tu contraseña?</a>

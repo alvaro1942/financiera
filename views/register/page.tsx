@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Landmark, ArrowLeft, Mail, Lock, User, Calendar, Phone, MapPin, CreditCard, UploadCloud, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Landmark, ArrowLeft, Mail, Lock, User, Calendar, Phone, MapPin, CreditCard, UploadCloud, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { registerUser } from '@/app/actions/auth';
@@ -12,6 +12,8 @@ export default function RegisterView() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [fileName, setFileName] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -214,7 +216,10 @@ export default function RegisterView() {
                                     <label className="text-slate-900 dark:text-slate-300 text-xs font-semibold ml-1">Contraseña</label>
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                        <input name="password" className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 h-11 placeholder:text-slate-400 pl-9 pr-4 text-sm font-medium transition-all" placeholder="Mínimo 8 caracteres" type="password" required />
+                                        <input name="password" className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 h-11 placeholder:text-slate-400 pl-9 pr-10 text-sm font-medium transition-all" placeholder="Mínimo 8 caracteres" type={showPassword ? "text" : "password"} required />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors focus:outline-none">
+                                            {showPassword ? <EyeOff className="w-4 h-4 text-primary" /> : <Eye className="w-4 h-4" />}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -223,7 +228,10 @@ export default function RegisterView() {
                                     <label className="text-slate-900 dark:text-slate-300 text-xs font-semibold ml-1">Confirmar Contraseña</label>
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                        <input name="confirmarPassword" className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 h-11 placeholder:text-slate-400 pl-9 pr-4 text-sm font-medium transition-all" placeholder="Confirma contraseña" type="password" required />
+                                        <input name="confirmarPassword" className="form-input flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 h-11 placeholder:text-slate-400 pl-9 pr-10 text-sm font-medium transition-all" placeholder="Confirma contraseña" type={showConfirmPassword ? "text" : "password"} required />
+                                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors focus:outline-none">
+                                            {showConfirmPassword ? <EyeOff className="w-4 h-4 text-primary" /> : <Eye className="w-4 h-4" />}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
