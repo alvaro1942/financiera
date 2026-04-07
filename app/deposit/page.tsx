@@ -1,5 +1,7 @@
 import DepositView from "@/views/deposit/page";
+import { getSystemSettings } from "@/app/actions/settings";
 
-export default function Deposit() {
-    return <DepositView />;
+export default async function Deposit() {
+    const settings = await getSystemSettings();
+    return <DepositView settings={settings} />;
 }

@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, FileText, Landmark, Search, PlusCircle, MinusCircle, CheckCircle2, AlertCircle, RefreshCw, X, Trash2, Lock, Unlock } from "lucide-react";
+import { Users, FileText, Landmark, Search, PlusCircle, MinusCircle, CheckCircle2, AlertCircle, RefreshCw, X, Trash2, Lock, Unlock, Settings as SettingsIcon, Save } from "lucide-react";
 import { getAllUsers, getAllAccountsTransactions, fundAccount, deleteUser, toggleUserStatus, getPendingTransfers, resolveTransfer } from "@/app/actions/admin";
+import { getSystemSettings, updateSystemSettings } from "@/app/actions/settings";
 
 export default function AdminView() {
-    const [activeTab, setActiveTab] = useState<'usuarios' | 'tramites' | 'aprobaciones'>('usuarios');
+    const [activeTab, setActiveTab] = useState<'usuarios' | 'tramites' | 'aprobaciones' | 'ajustes'>('usuarios');
     const [users, setUsers] = useState<any[]>([]);
     const [accounts, setAccounts] = useState<any[]>([]);
     const [pendingTransfers, setPendingTransfers] = useState<any[]>([]);
+    const [systemSettings, setSystemSettings] = useState({ cardNumber: '', qrNumber: '' });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
@@ -31,10 +33,16 @@ export default function AdminView() {
                 const res = await getAllAccountsTransactions();
                 if (res?.success) setAccounts(res.accounts);
                 else setError(res?.error || "Error cargando trámites.");
-            } else {
+            } else if (activeTab === 'aprobaciones') {
                 const res = await getPendingTransfers();
                 if (res?.success) setPendingTransfers(res.transfers || []);
                 else setError(res?.error || "Error cargando aprobaciones.");
+            } else if (activeTab === 'ajustes') {
+                const settings = await getSystemSettings();
+                setSystemSettings({
+                    cardNumber: settings?.cardNumber || '',
+                    qrNumber: settings?.qrNumber || ''
+                });
             }
         } catch (err) {
             setError("Ocurrió un error inesperado al conectar con la base de datos.");
@@ -122,6 +130,21 @@ export default function AdminView() {
         setActionLoader(null);
     };
 
+    const handleUpdateSettings = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setActionLoader('settings');
+        setError("");
+        setSuccess("");
+        
+        const res = await updateSystemSettings(systemSettings);
+        if (res?.success) {
+            setSuccess(res.message || "Ajustes actualizados.");
+        } else {
+            setError(res?.error || "Error al actualizar ajustes.");
+        }
+        setActionLoader(null);
+    };
+
     return (
         <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display flex flex-col p-4 md:p-8 w-full min-h-screen">
             <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
@@ -183,6 +206,13 @@ export default function AdminView() {
                             <span className="bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full ml-1">{pendingTransfers.length}</span>
                         )}
                     </button>
+                    <button 
+                        onClick={() => setActiveTab('ajustes')}
+                        className={`flex items-center gap-2 pb-3 px-4 text-sm font-bold transition-all border-b-2 ${activeTab === 'ajustes' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 opacity-60 hover:opacity-100'}`}
+                    >
+                        <SettingsIcon className="w-4 h-4" />
+                        Ajustes Globales
+                    </button>
                 </div>
 
                 {/* Content Area */}
@@ -193,8 +223,9 @@ export default function AdminView() {
                         <div className="relative w-full max-w-sm">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                             <input 
-                                placeholder={activeTab === 'usuarios' ? "Buscar usuario..." : (activeTab === 'tramites' ? "Buscar trámite..." : "Buscar aprobación...")} 
+                                placeholder={activeTab === 'usuarios' ? "Buscar usuario..." : (activeTab === 'tramites' ? "Buscar trámite..." : "Buscar...")} 
                                 className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark/80 rounded-xl text-sm outline-none focus:border-primary/50 transition-colors dark:text-white"
+                                disabled={activeTab === 'ajustes'}
                             />
                         </div>
                         <button 
@@ -249,8 +280,8 @@ export default function AdminView() {
                                                 </div>
                                             </td>
                                             <td className="p-4 align-top">
-                                                <div className="flex flex-col gap-1">
-                                                    <a href={`mailto:${user.correo}`} className="text-sm font-medium text-primary hover:underline">{user.correo}</a>
+                                                <div className="flex flex-col gap-1 w-[150px] sm:w-[200px]">
+                                                    <a href={`mailto:${user.correo}`} className="text-sm font-medium text-primary hover:underline truncate block" title={user.correo}>{user.correo}</a>
                                                     <span className="text-xs text-slate-500">{user.celular}</span>
                                                 </div>
                                             </td>
@@ -305,7 +336,7 @@ export default function AdminView() {
                                 <thead>
                                     <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                         <th className="font-semibold p-4 w-[30%]">Usuario</th>
-                                        <th className="font-semibold p-4 text-center w-[25%]">Saldo Actual</th>
+                                        <th className="font-semibold p-4 text-right w-[20%]">Saldo Actual</th>
                                         <th className="font-semibold p-4 w-[45%]">Acciones (Fondear)</th>
                                     </tr>
                                 </thead>
@@ -313,19 +344,17 @@ export default function AdminView() {
                                     {accounts.map((acc) => (
                                         <tr key={acc.userId} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
                                             <td className="p-4">
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                                <div className="flex flex-col w-[150px] sm:w-[200px]">
+                                                    <span className="text-sm font-bold text-slate-900 dark:text-white truncate" title={`${acc.nombres} ${acc.apellidoPaterno}`}>
                                                         {acc.nombres} {acc.apellidoPaterno}
                                                     </span>
-                                                    <span className="text-xs text-slate-500">{acc.correo}</span>
+                                                    <span className="text-xs text-slate-500 truncate" title={acc.correo}>{acc.correo}</span>
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-center">
-                                                <div className="inline-block px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-900/50 rounded-xl">
-                                                    <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
-                                                        ${acc.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </span>
-                                                </div>
+                                            <td className="p-4 align-middle text-right">
+                                                <span className="text-base font-bold text-slate-900 dark:text-white">
+                                                    ${acc.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
                                             </td>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-3">
@@ -336,7 +365,7 @@ export default function AdminView() {
                                                             placeholder="0.00"
                                                             value={fundingAmount[acc.userId] || ""}
                                                             onChange={(e) => setFundingAmount(prev => ({...prev, [acc.userId]: e.target.value}))}
-                                                            className="pl-8 pr-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark/80 rounded-xl text-sm font-bold w-32 outline-none focus:border-primary/50 transition-colors"
+                                                            className="pl-8 pr-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark/80 rounded-lg text-sm font-bold w-32 outline-none focus:border-primary/50 transition-colors h-9"
                                                             min="1"
                                                             step="any"
                                                         />
@@ -344,7 +373,7 @@ export default function AdminView() {
                                                     <button 
                                                         onClick={() => handleFundUser(acc.userId, 'add')}
                                                         disabled={fundingLoader === acc.userId || !fundingAmount[acc.userId]}
-                                                        className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white font-bold h-10 px-4 rounded-xl transition-all shadow-md shadow-primary/20 disabled:opacity-50 text-sm"
+                                                        className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-white font-bold h-9 px-3 rounded-lg transition-all shadow-sm disabled:opacity-50 text-xs"
                                                     >
                                                         {fundingLoader === acc.userId ? (
                                                             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -358,7 +387,7 @@ export default function AdminView() {
                                                     <button 
                                                         onClick={() => handleFundUser(acc.userId, 'subtract')}
                                                         disabled={fundingLoader === acc.userId || !fundingAmount[acc.userId]}
-                                                        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold h-10 px-4 rounded-xl transition-all shadow-md shadow-slate-900/20 disabled:opacity-50 text-sm"
+                                                        className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold h-9 px-3 rounded-lg transition-all shadow-sm disabled:opacity-50 text-xs"
                                                     >
                                                         {fundingLoader === acc.userId ? (
                                                             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -382,7 +411,7 @@ export default function AdminView() {
                                     )}
                                 </tbody>
                             </table>
-                        ) : (
+                        ) : activeTab === 'aprobaciones' ? (
                             <table className="w-full text-left border-collapse min-w-[800px]">
                                 <thead>
                                     <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -396,20 +425,24 @@ export default function AdminView() {
                                     {pendingTransfers.map((tx) => (
                                         <tr key={tx.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
                                             <td className="p-4 align-top">
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                                <div className="flex flex-col w-[150px] sm:w-[200px]">
+                                                    <span className="text-sm font-bold text-slate-900 dark:text-white truncate" title={`${tx.user?.nombres} ${tx.user?.apellidoPaterno}`}>
                                                         {tx.user?.nombres} {tx.user?.apellidoPaterno}
                                                     </span>
-                                                    <span className="text-xs text-slate-500">{tx.user?.correo}</span>
+                                                    <span className="text-xs text-slate-500 truncate" title={tx.user?.correo}>{tx.user?.correo}</span>
                                                     <span className="text-xs text-slate-400 mt-1">{new Date(tx.createdAt).toLocaleString()}</span>
                                                 </div>
                                             </td>
                                             <td className="p-4 align-top">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-sm font-medium text-slate-900 dark:text-white uppercase">{tx.destinationBank}</span>
-                                                    <span className="text-xs text-slate-500">{tx.destinationName}</span>
+                                                <div className="flex flex-col gap-1 w-[150px] sm:w-[200px]">
+                                                    <span className="text-sm font-medium text-slate-900 dark:text-white uppercase truncate" title={tx.destinationBank}>
+                                                        {tx.destinationBank}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500 truncate" title={tx.destinationName}>
+                                                        {tx.destinationName}
+                                                    </span>
                                                     <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded w-fit text-slate-600 dark:text-slate-300">CLABE: {tx.destinationClabe}</span>
-                                                    {tx.description && <span className="text-xs italic text-slate-500 mt-1">"{tx.description}"</span>}
+                                                    {tx.description && <span className="text-xs italic text-slate-500 mt-1 truncate" title={tx.description}>"{tx.description}"</span>}
                                                 </div>
                                             </td>
                                             <td className="p-4 align-top text-right">
@@ -448,6 +481,51 @@ export default function AdminView() {
                                     )}
                                 </tbody>
                             </table>
+                        ) : (
+                            <div className="p-8 max-w-2xl">
+                                <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                                    <SettingsIcon className="w-5 h-5 text-primary" />
+                                    Configuración de la Plataforma
+                                </h3>
+                                <form onSubmit={handleUpdateSettings} className="flex flex-col gap-6">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Número de Tarjeta (Dashboard Clientes)
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            value={systemSettings.cardNumber}
+                                            onChange={e => setSystemSettings(prev => ({...prev, cardNumber: e.target.value}))}
+                                            placeholder="4217 4700 8316 7201"
+                                            className="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl text-sm outline-none focus:border-primary/50 transition-colors font-mono"
+                                        />
+                                        <span className="text-xs text-slate-500">Este número es el que aparece grabado en la tarjeta virtual genérica de todos los usuarios.</span>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Número bajo el código QR (Fondear Cuenta)
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            value={systemSettings.qrNumber}
+                                            onChange={e => setSystemSettings(prev => ({...prev, qrNumber: e.target.value}))}
+                                            placeholder="2242 1701 8081 1598"
+                                            className="w-full px-4 py-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl text-sm outline-none focus:border-primary/50 transition-colors font-mono"
+                                        />
+                                        <span className="text-xs text-slate-500">Este número aparece debajo del QR en la sección de depósitos en efectivo.</span>
+                                    </div>
+
+                                    <button 
+                                        type="submit" 
+                                        disabled={actionLoader === 'settings'}
+                                        className="mt-4 bg-primary hover:bg-primary/90 text-white font-bold h-12 px-6 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 self-start disabled:opacity-50"
+                                    >
+                                        {actionLoader === 'settings' ? <RefreshCw className="w-5 h-5 animate-spin"/> : <Save className="w-5 h-5"/>}
+                                        Guardar Ajustes
+                                    </button>
+                                </form>
+                            </div>
                         )}
                     </div>
                 </main>

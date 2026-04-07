@@ -41,7 +41,7 @@ interface UserProfile {
     balance: number;
 }
 
-export default function DashboardView({ userProfile }: { userProfile: UserProfile }) {
+export default function DashboardView({ userProfile, settings }: { userProfile: UserProfile, settings: any }) {
     const [showCard, setShowCard] = useState(false);
     const [activeTab, setActiveTab] = useState<'inicio' | 'perfil'>('inicio');
     const [isEditing, setIsEditing] = useState(false);
@@ -281,7 +281,7 @@ export default function DashboardView({ userProfile }: { userProfile: UserProfil
                                     {/* Card Number */}
                                     <div className="flex flex-col gap-1">
                                         <p className="text-[0.6rem] uppercase tracking-widest opacity-70">Número de tarjeta</p>
-                                        <p className="text-lg sm:text-xl font-mono tracking-[0.15em] font-medium whitespace-nowrap">4217 4700 8316 7201</p>
+                                        <p className="text-lg sm:text-xl font-mono tracking-[0.15em] font-medium whitespace-nowrap">{settings?.cardNumber || "4217 4700 8316 7201"}</p>
                                     </div>
 
                                     {/* Footer Card Info */}

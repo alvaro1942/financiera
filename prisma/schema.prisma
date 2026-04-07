@@ -52,3 +52,10 @@ model Transaction {
   createdAt        DateTime @default(now())
 }
 
+model SystemSetting {
+  id         String   @id @default("global")
+  cardNumber String   @default("4217 4700 8316 7201")
+  qrNumber   String   @default("2242 1701 8081 1598")
+  updatedAt  DateTime @updatedAt
+}
+

@@ -12,7 +12,7 @@ import {
     Wallet
 } from 'lucide-react';
 
-export default function DepositView() {
+export default function DepositView({ settings }: { settings?: any }) {
     return (
         <div className="bg-[#19131f] text-slate-100 min-h-screen flex flex-col font-display max-w-2xl mx-auto w-full relative">
             {/* Header */}
@@ -57,7 +57,7 @@ export default function DepositView() {
                                 />
                             </div>
                             <span className="font-mono text-[15px] tracking-widest text-[#c182fa] font-bold text-center">
-                                2242 1701 8081 1598
+                                {settings?.qrNumber || "2242 1701 8081 1598"}
                             </span>
                         </div>
 
