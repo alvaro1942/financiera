@@ -56,7 +56,12 @@ export default function DashboardView({ userProfile }: { userProfile: UserProfil
         const fetchTx = async () => {
             setLoadingTx(true);
             const res = await getUserTransactions();
-            if (res?.success) setTransactions(res.transactions || []);
+            console.log("Fetch tx result:", res);
+            if (res?.success) {
+                setTransactions(res.transactions || []);
+            } else {
+                console.error("Error fetching tx:", res?.error);
+            }
             setLoadingTx(false);
         };
         fetchTx();

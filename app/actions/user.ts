@@ -107,7 +107,6 @@ export async function getUserTransactions() {
       take: 20
     });
 
-    // Make decimal serializable to client
     const serialized = transactions.map((t: any) => ({
       id: t.id,
       amount: parseFloat(t.amount.toString()),
@@ -116,6 +115,7 @@ export async function getUserTransactions() {
       createdAt: t.createdAt.toISOString()
     }));
 
+    console.log(`[DEBUG] Transacciones encontradas para usuario ${session.userId}: ${serialized.length}`);
     return { success: true, transactions: serialized };
   } catch (error) {
     console.error("Error fetching user transactions:", error);

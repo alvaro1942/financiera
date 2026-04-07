@@ -1,7 +1,7 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import {
     ArrowLeft,
-    QrCode,
     Copy,
     Home,
     History,
@@ -47,10 +47,18 @@ export default function DepositView() {
                             </button>
                         </div>
 
-                        <div className="bg-[#19131f] p-4 rounded-xl flex items-center justify-center border border-[#362843]">
-                            <div className="bg-white p-2 rounded-lg w-full max-w-[200px] aspect-square flex items-center justify-center">
-                                <QrCode className="w-full h-full text-black" strokeWidth={1} />
+                        <div className="bg-[#19131f] p-5 rounded-xl flex flex-col items-center justify-center border border-[#362843] gap-4">
+                            <div className="bg-white p-2 rounded-lg w-full max-w-[200px] aspect-square relative flex items-center justify-center overflow-hidden">
+                                <Image 
+                                    src="/qr-deposit.png" 
+                                    alt="Código QR para depósito" 
+                                    fill
+                                    className="object-contain p-2"
+                                />
                             </div>
+                            <span className="font-mono text-[15px] tracking-widest text-[#c182fa] font-bold text-center">
+                                2242 1701 8081 1598
+                            </span>
                         </div>
 
                     </div>
