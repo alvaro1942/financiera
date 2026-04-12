@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "./auth";
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 
 // Check if user is admin
 async function isAdmin() {
@@ -273,6 +274,30 @@ export async function resolveTransfer(transactionId: string, action: 'APPROVE' |
   } catch (error: any) {
     console.error("Error resolving transfer:", error);
     return { error: "Error al resolver la transferencia." };
+  }
+}
+
+export async function resetUserPassword(userId: string, newPassword: string) {
+  if (!(await isAdmin())) return { error: "No autorizado." };
+  
+  if (!newPassword || newPassword.length < 6) {
+    return { error: "La contraseña debe tener al menos 6 caracteres." };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId }});
+    if (!user) return { error: "Usuario no encontrado" };
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword }
+    });
+    
+    return { success: true, message: "Contraseña actualizada exitosamente." };
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    return { error: "Error al restablecer la contraseña." };
   }
 }
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, FileText, Landmark, Search, PlusCircle, MinusCircle, CheckCircle2, AlertCircle, RefreshCw, X, Trash2, Lock, Unlock, Settings as SettingsIcon, Save } from "lucide-react";
-import { getAllUsers, getAllAccountsTransactions, fundAccount, deleteUser, toggleUserStatus, getPendingTransfers, resolveTransfer } from "@/app/actions/admin";
+import { Users, FileText, Landmark, Search, PlusCircle, MinusCircle, CheckCircle2, AlertCircle, RefreshCw, X, Trash2, Lock, Unlock, Settings as SettingsIcon, Save, Key } from "lucide-react";
+import { getAllUsers, getAllAccountsTransactions, fundAccount, deleteUser, toggleUserStatus, getPendingTransfers, resolveTransfer, resetUserPassword } from "@/app/actions/admin";
 import { getSystemSettings, updateSystemSettings } from "@/app/actions/settings";
 
 export default function AdminView() {
@@ -19,6 +19,13 @@ export default function AdminView() {
     const [fundingAmount, setFundingAmount] = useState<{[key: string]: string}>({});
     const [fundingLoader, setFundingLoader] = useState<string | null>(null);
     const [actionLoader, setActionLoader] = useState<string | null>(null);
+
+    // Password reset state
+    const [passwordInputs, setPasswordInputs] = useState<{[key: string]: string}>({});
+    const [passwordLoader, setPasswordLoader] = useState<string | null>(null);
+
+    // Search state
+    const [searchTerm, setSearchTerm] = useState("");
 
     const loadData = async () => {
         setLoading(true);
@@ -53,7 +60,37 @@ export default function AdminView() {
 
     useEffect(() => {
         loadData();
+        setSearchTerm("");
     }, [activeTab]);
+
+    const filteredUsers = users.filter(u => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        return u.nombres?.toLowerCase().includes(term) ||
+               u.apellidoPaterno?.toLowerCase().includes(term) ||
+               u.correo?.toLowerCase().includes(term) ||
+               u.curp?.toLowerCase().includes(term) ||
+               u.id?.toLowerCase().includes(term);
+    });
+
+    const filteredAccounts = accounts.filter(acc => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        return acc.nombres?.toLowerCase().includes(term) ||
+               acc.apellidoPaterno?.toLowerCase().includes(term) ||
+               acc.correo?.toLowerCase().includes(term);
+    });
+
+    const filteredTransfers = pendingTransfers.filter(tx => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        return tx.user?.nombres?.toLowerCase().includes(term) ||
+               tx.user?.apellidoPaterno?.toLowerCase().includes(term) ||
+               tx.user?.correo?.toLowerCase().includes(term) ||
+               tx.destinationBank?.toLowerCase().includes(term) ||
+               tx.destinationName?.toLowerCase().includes(term) ||
+               tx.destinationClabe?.includes(term);
+    });
 
     const handleFundUser = async (userId: string, action: 'add' | 'subtract') => {
         const amtStr = fundingAmount[userId];
@@ -113,6 +150,27 @@ export default function AdminView() {
             setError(res?.error || "Ocurrió un error al cambiar estado del usuario.");
         }
         setActionLoader(null);
+    };
+
+    const handleResetPassword = async (userId: string) => {
+        const newPass = passwordInputs[userId];
+        if (!newPass || newPass.length < 6) {
+            setError("Ingresa una nueva contraseña de al menos 6 caracteres.");
+            return;
+        }
+        
+        setPasswordLoader(userId);
+        setError("");
+        setSuccess("");
+        
+        const res = await resetUserPassword(userId, newPass);
+        if (res?.success) {
+            setSuccess(res.message);
+            setPasswordInputs(prev => ({...prev, [userId]: ""}));
+        } else {
+            setError(res?.error || "Error al restablecer contraseña.");
+        }
+        setPasswordLoader(null);
     };
 
     const handleResolveTransfer = async (txId: string, action: 'APPROVE' | 'REJECT') => {
@@ -224,6 +282,8 @@ export default function AdminView() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                             <input 
                                 placeholder={activeTab === 'usuarios' ? "Buscar usuario..." : (activeTab === 'tramites' ? "Buscar trámite..." : "Buscar...")} 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark/80 rounded-xl text-sm outline-none focus:border-primary/50 transition-colors dark:text-white"
                                 disabled={activeTab === 'ajustes'}
                             />
@@ -259,7 +319,7 @@ export default function AdminView() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {users.map((user) => (
+                                    {filteredUsers.map((user) => (
                                         <tr key={user.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
                                             <td className="p-4 align-top">
                                                 <div className="flex flex-col gap-1">
@@ -322,7 +382,7 @@ export default function AdminView() {
                                             </td>
                                         </tr>
                                     ))}
-                                    {users.length === 0 && (
+                                    {filteredUsers.length === 0 && (
                                         <tr>
                                             <td colSpan={7} className="p-8 text-center text-slate-500 text-sm">
                                                 No hay usuarios registrados.
@@ -335,13 +395,14 @@ export default function AdminView() {
                             <table className="w-full text-left border-collapse min-w-[800px]">
                                 <thead>
                                     <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        <th className="font-semibold p-4 w-[30%]">Usuario</th>
-                                        <th className="font-semibold p-4 text-right w-[20%]">Saldo Actual</th>
-                                        <th className="font-semibold p-4 w-[45%]">Acciones (Fondear)</th>
+                                        <th className="font-semibold p-4 w-[25%]">Usuario</th>
+                                        <th className="font-semibold p-4 text-right w-[15%]">Saldo Actual</th>
+                                        <th className="font-semibold p-4 w-[30%]">Acciones (Fondear)</th>
+                                        <th className="font-semibold p-4 w-[30%]">Seguridad</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {accounts.map((acc) => (
+                                    {filteredAccounts.map((acc) => (
                                         <tr key={acc.userId} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
                                             <td className="p-4">
                                                 <div className="flex flex-col w-[150px] sm:w-[200px]">
@@ -400,11 +461,36 @@ export default function AdminView() {
                                                     </button>
                                                 </div>
                                             </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="relative w-full">
+                                                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                                                        <input 
+                                                            type="text"
+                                                            placeholder="Nueva contraseña"
+                                                            value={passwordInputs[acc.userId] || ""}
+                                                            onChange={(e) => setPasswordInputs(prev => ({...prev, [acc.userId]: e.target.value}))}
+                                                            className="pl-9 pr-2 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark/80 rounded-lg text-xs w-full outline-none focus:border-primary/50 transition-colors h-9"
+                                                        />
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => handleResetPassword(acc.userId)}
+                                                        disabled={passwordLoader === acc.userId || !passwordInputs[acc.userId]}
+                                                        className="flex items-center justify-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold h-9 px-3 rounded-lg transition-all shadow-sm disabled:opacity-50 text-xs flex-shrink-0"
+                                                    >
+                                                        {passwordLoader === acc.userId ? (
+                                                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                        ) : (
+                                                            "Actualizar"
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))}
-                                    {accounts.length === 0 && (
+                                    {filteredAccounts.length === 0 && (
                                         <tr>
-                                            <td colSpan={3} className="p-8 text-center text-slate-500 text-sm">
+                                            <td colSpan={4} className="p-8 text-center text-slate-500 text-sm">
                                                 Aún no hay usuarios.
                                             </td>
                                         </tr>
@@ -422,7 +508,7 @@ export default function AdminView() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {pendingTransfers.map((tx) => (
+                                    {filteredTransfers.map((tx) => (
                                         <tr key={tx.id} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
                                             <td className="p-4 align-top">
                                                 <div className="flex flex-col w-[150px] sm:w-[200px]">
@@ -472,7 +558,7 @@ export default function AdminView() {
                                             </td>
                                         </tr>
                                     ))}
-                                    {pendingTransfers.length === 0 && (
+                                    {filteredTransfers.length === 0 && (
                                         <tr>
                                             <td colSpan={4} className="p-8 text-center text-slate-500 text-sm">
                                                 No hay transferencias pendientes por aprobar.
